@@ -5,12 +5,27 @@ edition = "2024"
 
 # [重要] 告诉编译器这是一个动态库，这样才能生成 .wasm 文件
 [lib]
-crate-type = ["cdylib"] 
+crate-type = ["cdylib", "rlib"] 
+
+[features]
+generate-dump = ["syntect/default-syntaxes"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-pulldown-cmark = { version = "0.13", default-features = false, features = ["simd"] }
+pulldown-cmark = { version = "0.13", default-features = false, features = ["simd", "html"] }
 syntect = { version = "5.3", default-features = false, features = ["html", "plist-load", "regex-fancy"] }
 latex2mathml = "0.2"
 once_cell = "1.21"
 regex = "1"
+
+[[bin]]
+name = "generate_syntax_dump"
+path = "scripts/generate_syntax_dump.rs"
+required-features = ["generate-dump"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

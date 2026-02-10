@@ -1,0 +1,23 @@
+name: Publish to NPM
+on:
+  push:
+    tags:
+      - '*' # 比如 push v0.1.0 标签时触发
+
+jobs:
+  publish-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install wasm-pack
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - run: cargo test
+
+      - name: Build
+        run: wasm-pack build --target web --scope charlesify
+      - name: Publish
+        run: npm publish --access public
+        working-directory: ./pkg
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 去 NPM 生成一个 Access Token 填到 GitHub Secrets
