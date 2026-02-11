@@ -14,10 +14,16 @@ static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| {
     syntect::dumps::from_binary(syntax_dump)
 });
 
-// 预编译正则：解决 $5 and $10 问题
-// 逻辑：内联公式 $...$ 的第一个字符不能是数字(\d)也不能是空格(\s)
+// 预编译正则：GitHub 风格数学公式检测
+// 规则：
+// - $$...$$ : 块级公式
+// - $...$   : 行内公式，要求：
+//   1. 第一个 $ 前是字符串开头或空格
+//   2. 第二个 $ 后是字符串结尾或空格
+// 这样可区分 $5/month (货币) 和 $1+1=2$ (公式)
+// 正则不包含边界，边界检查在代码中进行
 static MATH_REGEX: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r"(\$\$)([\s\S]+?)(\$\$)|(\$)((?:[^$\s\d]|[^$\s\d][^$]*?[^$\s]))(\$)").unwrap()
+    Regex::new(r"(\$\$)([\s\S]+?)(\$\$)|\$([^$\s][^$]*?)\$").unwrap()
 });
 
 // --- 2. 辅助函数：数学渲染 ---
@@ -179,10 +185,33 @@ pub fn render_markdown(markdown_input: &str) -> String {
                         // 匹配到了 $$ (Group 2 是内容)
                         let math_html = render_math(content.as_str(), true);
                         new_events.push(Event::Html(CowStr::from(math_html)));
-                    } else if let Some(content) = cap.get(5) {
-                        // 匹配到了 $ (Group 5 是内容)
-                        let math_html = render_math(content.as_str(), false);
-                        new_events.push(Event::Html(CowStr::from(math_html)));
+                    } else if let Some(content) = cap.get(4) {
+                        // 匹配到了 $ (Group 4 是内容)
+                        // GitHub 风格边界检查（扩展支持中文）：
+                        // - 前缀：字符串开头、空白字符、或非 ASCII 字符（如中文）
+                        // - 后缀：字符串结尾、空白字符、标点符号、或非 ASCII 字符
+                        let prev_char = text[..match_start].chars().last();
+                        let is_valid_prefix = match_start == 0 
+                            || prev_char.map(|c| c.is_whitespace() || !c.is_ascii_alphanumeric()).unwrap_or(false);
+                        
+                        let next_char = text[match_end..].chars().next();
+                        let is_valid_suffix = match_end == text.len()
+                            || next_char.map(|c| {
+                                c.is_whitespace() 
+                                    || !c.is_ascii_alphanumeric()
+                                    || matches!(c, '.' | ',' | ';' | ':' | '!' | '?' | ')' | ']' | '}' | '"' | '\'' | '/')
+                            }).unwrap_or(false);
+                        
+                        if is_valid_prefix && is_valid_suffix {
+                            // 是有效的公式，渲染它
+                            let math_html = render_math(content.as_str(), false);
+                            new_events.push(Event::Html(CowStr::from(math_html)));
+                        } else {
+                            // 不满足边界条件（如 $5/month），当作普通文本
+                            new_events.push(Event::Text(CowStr::from(
+                                cap.get(0).unwrap().as_str().to_string(),
+                            )));
+                        }
                     }
 
                     last_end = match_end;

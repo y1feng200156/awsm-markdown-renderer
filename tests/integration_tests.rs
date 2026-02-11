@@ -207,20 +207,25 @@ fn test_unicode_and_chinese() {
 
 #[test]
 fn test_number_start_restriction() {
-    // 你的正则逻辑：如果 $ 紧跟数字，则不视为公式
-    let input = "Equation $1+1=2$ should be text, but $x=1$ is math.";
+    // GitHub 风格边界判断：
+    // - $1+1=2$ 应该渲染为公式（前后都有空格，边界满足）
+    // - $5/month 应该保留为货币（后 / 不是空格，边界不满足）
+    let input = "Equation $1+1=2$ should be math, but $1/day $5/month is currency.";
     let html = render_markdown(input);
 
-    // $1+1=2$ 应该保持原样（不渲染为 MathML）
+    // $1+1=2$ 应该渲染为公式（边界满足）
     assert!(
-        !html.contains("<math><mn>1</mn>"),
-        "Formulas starting with a number should be ignored (to protect currency)"
+        html.contains("<math"),
+        "Formulas with proper boundaries should render as math"
     );
-    assert!(html.contains("$1+1=2$"), "Should render as plain text");
-
-    // $x=1$ 应该渲染
     assert!(
-        html.contains("<mi>x</mi>"),
-        "Standard formulas should still render"
+        !html.contains("$1+1=2$"),
+        "$1+1=2$ should be converted to math, not preserved as text"
+    );
+
+    // $5/month 应该保留为货币（边界不满足，/ 不是空格）
+    assert!(
+        html.contains("$5/month"),
+        "Should preserve $5/month as currency"
     );
 }
