@@ -5,10 +5,14 @@ on:
       - '*' # 比如 push v0.1.0 标签时触发
   workflow_dispatch:  # 手动触发
 
+permissions:
+  id-token: write    # 必需：用于 OIDC 认证
+  contents: read     # 必需：用于检出代码
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: NPM_TOKEN  # 使用 Environment secrets
+    environment: NPM_TOKEN  # 使用 Environment secrets (可选)
     steps:
       - uses: actions/checkout@v4
 
@@ -32,12 +36,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'  # Trusted Publishing 需要 Node 22.14.0+
           registry-url: 'https://registry.npmjs.org'
 
-      # 4. 发布
+      # 4. 发布 (使用 Trusted Publishing，不需要 NPM_TOKEN)
       - name: Publish
         run: npm publish --access public
         working-directory: ./pkg
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # 去 NPM 生成一个 Access Token 填到 GitHub Secrets
+        # 注意：不需要 NODE_AUTH_TOKEN，npm CLI 会自动使用 OIDC
