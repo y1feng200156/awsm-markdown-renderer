@@ -5,17 +5,35 @@ on:
       - '*' # 比如 push v0.1.0 标签时触发
 
 jobs:
-  publish-wasm:
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
-      - run: cargo test
-
-      - name: Build
+      # 1. 编译 (生成 pkg 目录)
+      - name: Build Wasm
         run: wasm-pack build --target web --scope y1feng200156
+
+      # 2. 【关键】运行你的新 Rust bin
+      - name: Run Post-Processing
+        run: cargo run --bin post_process
+
+      # 3. 准备 Node 环境 (仅用于上传)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      # 4. 发布
       - name: Publish
         run: npm publish --access public
         working-directory: ./pkg

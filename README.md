@@ -1,10 +1,14 @@
 # AWSM Markdown Renderer
 
-A high-performance Markdown renderer written in Rust and compiled to WebAssembly (Wasm). It supports GitHub Flavored Markdown (GFM), Syntax Highlighting, and LaTeX Math rendering.
+A high-performance, universal Markdown renderer written in Rust and compiled to WebAssembly (Wasm).
+
+It is designed to run everywhere: **Browsers**, **Node.js**, **Next.js**, and **Cloudflare Workers**.
 
 ## Features
 
+- **Universal Support**: Works seamlessly in Next.js (Edge/Node runtimes) and Cloudflare Workers without complex configuration.
 - **Fast**: Built with Rust and `pulldown-cmark`.
+- **Zero-Config Initialization**: Auto-initializes Wasm in standard environments.
 - **Syntax Highlighting**: Uses `syntect` for compile-time generated syntax dumping (no huge JS runtime bundles).
 - **Math Support**: Renders LaTeX to MathML using `latex2mathml` (Validation compatible).
 - **GFM Support**: Tables, Strikethrough, Tasklists, Footnotes.
@@ -13,49 +17,82 @@ A high-performance Markdown renderer written in Rust and compiled to WebAssembly
 
 ```bash
 npm install @y1feng200156/awsm-markdown-renderer
-```
 
+```
 
 ## Usage
 
-```javascript
-import init, { render_markdown } from '@y1feng200156/awsm-markdown-renderer';
+### 1. Next.js / React / Browser (Standard)
+
+In standard environments (like Next.js Server Components, Client Components, or plain HTML), the renderer automatically handles the Wasm initialization.
+
+```typescript
+import { render_markdown } from '@y1feng200156/awsm-markdown-renderer';
 
 async function main() {
-    // Initialize the Wasm module
-    await init();
-
     const markdown = `
 # Hello World
-
-Here is some code:
-
-\`\`\`rust
-fn main() {
-    println!("Hello");
-}
-\`\`\`
-
-And some math: $E = mc^2$
+This is **bold** text.
     `;
 
-    const html = render_markdown(markdown);
+    // Just call it! No need to manually init().
+    const html = await render_markdown(markdown);
+    
     console.log(html);
 }
 
 main();
+
+```
+
+**Note for Next.js:** Ensure `asyncWebAssembly` is enabled in your `next.config.mjs`.
+
+### 2. Cloudflare Workers (Edge)
+
+Cloudflare Workers require you to explicitly import the `.wasm` file and pass it to the renderer.
+
+```typescript
+// worker.ts
+import { render_markdown } from '@y1feng200156/awsm-markdown-renderer';
+
+// Import the WASM file explicitly (Wrangler handles the bundling)
+import wasm from '@y1feng200156/awsm-markdown-renderer/awsm_markdown_renderer_bg.wasm';
+
+export default {
+  async fetch(request, env, ctx) {
+    const markdown = "# Hello from Edge!";
+    
+    // Pass the wasm module as the second argument
+    const html = await render_markdown(markdown, wasm);
+
+    return new Response(html, {
+      headers: { "content-type": "text/html" },
+    });
+  },
+};
+
 ```
 
 ## Building Locally
 
 Requirements:
-- Rust
-- `wasm-pack`
+
+* Rust (latest stable)
+* `wasm-pack`
 
 ```bash
-# Install wasm-pack
-curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+# 1. Install wasm-pack (if not installed)
+curl [https://rustwasm.github.io/wasm-pack/installer/init.sh](https://rustwasm.github.io/wasm-pack/installer/init.sh) -sSf | sh
 
-# Build
-wasm-pack build --target web
+# 2. Build the Wasm module
+wasm-pack build --target web --scope y1feng200156
+
+# 3. Run Post-Processing
+# This step injects the wrapper and updates package.json for universal support
+cargo run --bin post_process
+
 ```
+
+## License
+
+MIT
