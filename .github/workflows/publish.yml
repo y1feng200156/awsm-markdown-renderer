@@ -3,6 +3,7 @@ on:
   push:
     tags:
       - '*' # 比如 push v0.1.0 标签时触发
+  workflow_dispatch:  # 手动触发
 
 jobs:
   publish:
