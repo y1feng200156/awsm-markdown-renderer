@@ -6,13 +6,13 @@ on:
   workflow_dispatch:  # 手动触发
 
 permissions:
-  id-token: write    # 必需：用于 OIDC 认证
-  contents: read     # 必需：用于检出代码
+  id-token: write    # 用于 Trusted Publishing (OIDC)
+  contents: read
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: NPM_TOKEN  # 使用 Environment secrets (可选)
+    environment: NPM_TOKEN  # 可选：使用 Environment 部署保护
     steps:
       - uses: actions/checkout@v4
 
@@ -32,15 +32,25 @@ jobs:
       - name: Run Post-Processing
         run: cargo run --bin post_process
 
-      # 3. 准备 Node 环境 (仅用于上传)
+      # 3. 准备 Node 环境
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '24'  # Trusted Publishing 需要 Node 22.14.0+
           registry-url: 'https://registry.npmjs.org'
 
-      # 4. 发布 (使用 Trusted Publishing，不需要 NPM_TOKEN)
-      - name: Publish
+      # 4. 发布
+      # 优先尝试 Trusted Publishing (OIDC)，失败时回退到 Token
+      - name: Publish with OIDC (Trusted Publishing)
         run: npm publish --access public
         working-directory: ./pkg
-        # 注意：不需要 NODE_AUTH_TOKEN，npm CLI 会自动使用 OIDC
+        continue-on-error: true  # 如果失败，继续下一步
+        id: oidc_publish
+
+      # 如果 OIDC 失败，使用 Token 发布
+      - name: Publish with Token (Fallback)
+        if: steps.oidc_publish.outcome == 'failure'
+        run: npm publish --access public
+        working-directory: ./pkg
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
