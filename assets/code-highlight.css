@@ -14,16 +14,6 @@
    CSS Variables - Customize Your Theme
    ============================================ */
 :root {
-  /* Code Block Container - Light Theme (Default) */
-  --awsm-code-bg: #f6f8fa;
-  --awsm-code-fg: #24292e;
-  --awsm-code-border: #e1e4e8;
-  --awsm-code-border-radius: 8px;
-  --awsm-code-padding: 1rem;
-  --awsm-code-font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
-  --awsm-code-font-size: 0.875rem;
-  --awsm-code-line-height: 1.6;
-
   /* Syntax Highlighting Colors - Light Theme */
   /* General */
   --awsm-syntax-text: #24292e;
@@ -39,7 +29,7 @@
   --awsm-syntax-constant: #005cc5;
   --awsm-syntax-tag: #22863a;
   --awsm-syntax-attribute: #6f42c1;
-  
+
   /* Specific Language Support */
   --awsm-syntax-storage: #d73a49;
   --awsm-syntax-entity: #6f42c1;
@@ -61,10 +51,6 @@
    ============================================ */
 [data-theme="dark"],
 .dark-theme {
-  --awsm-code-bg: #1e1e1e;
-  --awsm-code-fg: #d4d4d4;
-  --awsm-code-border: #3e3e3e;
-  
   --awsm-syntax-text: #d4d4d4;
   --awsm-syntax-comment: #6a9955;
   --awsm-syntax-keyword: #569cd6;
@@ -78,7 +64,7 @@
   --awsm-syntax-constant: #4fc1ff;
   --awsm-syntax-tag: #569cd6;
   --awsm-syntax-attribute: #9cdcfe;
-  
+
   --awsm-syntax-storage: #569cd6;
   --awsm-syntax-entity: #4ec9b0;
   --awsm-syntax-support: #dcdcaa;
@@ -92,40 +78,6 @@
   --awsm-diff-deleted-bg: rgba(248, 81, 73, 0.2);
   --awsm-diff-changed-fg: #ffa657;
   --awsm-diff-changed-bg: rgba(255, 166, 87, 0.2);
-}
-
-/* ============================================
-   Code Block Base Styles
-   ============================================ */
-pre:has(> code) {
-  background-color: var(--awsm-code-bg);
-  border: 1px solid var(--awsm-code-border);
-  border-radius: var(--awsm-code-border-radius);
-  padding: var(--awsm-code-padding);
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-
-pre > code {
-  font-family: var(--awsm-code-font-family);
-  font-size: var(--awsm-code-font-size);
-  line-height: var(--awsm-code-line-height);
-  color: var(--awsm-code-fg);
-  background: transparent;
-  padding: 0;
-  border: none;
-  display: block;
-}
-
-/* Inline code (not in pre) */
-:not(pre) > code {
-  font-family: var(--awsm-code-font-family);
-  font-size: 0.85em;
-  background-color: var(--awsm-code-bg);
-  color: var(--awsm-code-fg);
-  padding: 0.2em 0.4em;
-  border-radius: 4px;
-  border: 1px solid var(--awsm-code-border);
 }
 
 /* ============================================
@@ -358,7 +310,7 @@ pre > code {
    Math Rendering Styles
    ============================================ */
 math {
-  font-family: 'Cambria Math', 'Latin Modern Math', 'STIX Two Math', serif;
+  font-family: "Cambria Math", "Latin Modern Math", "STIX Two Math", serif;
 }
 
 .math-error {
