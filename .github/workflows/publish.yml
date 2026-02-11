@@ -15,7 +15,7 @@ jobs:
       - run: cargo test
 
       - name: Build
-        run: wasm-pack build --target web --scope charlesify
+        run: wasm-pack build --target web --scope y1feng200156
       - name: Publish
         run: npm publish --access public
         working-directory: ./pkg
