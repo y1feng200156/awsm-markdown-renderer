@@ -8,7 +8,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    environment: npm  # 使用 Environment secrets
+    environment: NPM_TOKEN  # 使用 Environment secrets
     steps:
       - uses: actions/checkout@v4
 
