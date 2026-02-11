@@ -1,0 +1,10 @@
+{
+  "name": "node-demo",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Node.js demo for awsm_markdown_renderer",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
