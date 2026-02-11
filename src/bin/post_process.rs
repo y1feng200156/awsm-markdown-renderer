@@ -41,6 +41,15 @@ fn main() -> Result<()> {
     json["types"] = "wrapper.d.ts".into();
     json["sideEffects"] = false.into();
 
+    // 更新 files 字段，确保 wrapper 文件被包含在发布的包中
+    json["files"] = serde_json::json!([
+        "awsm_markdown_renderer_bg.wasm",
+        "awsm_markdown_renderer.js",
+        "awsm_markdown_renderer.d.ts",
+        "wrapper.js",
+        "wrapper.d.ts"
+    ]);
+
     // 4. 写回文件
     fs::write(&pkg_json_path, serde_json::to_string_pretty(&json)?)
         .context("Failed to write updated package.json")?;
