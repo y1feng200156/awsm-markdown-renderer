@@ -229,3 +229,45 @@ fn test_number_start_restriction() {
         "Should preserve $5/month as currency"
     );
 }
+
+#[test]
+fn test_tsx_code_block() {
+    let input = r#"```tsx
+function ffff() {
+  const i = 1;
+}
+```"#;
+    let html = render_markdown(input);
+    
+    // 检查是否有 language-tsx 类
+    assert!(html.contains("language-tsx"), "Should have language-tsx class, got: {}", html);
+    
+    // 检查代码内容是否保留
+    assert!(html.contains("function"), "Should contain 'function' keyword");
+    assert!(html.contains("const"), "Should contain 'const' keyword");
+    
+    // 检查是否有语法高亮（不是纯文本）
+    assert!(
+        html.contains("source tsx"),
+        "Should have TypeScript/React syntax highlighting classes, got: {}", html
+    );
+}
+
+#[test]
+fn test_typescript_code_block() {
+    let input = r#"```typescript
+function def() {
+  const i = 1;
+}
+```"#;
+    let html = render_markdown(input);
+    
+    // 检查是否有 language-typescript 类
+    assert!(html.contains("language-typescript"), "Should have language-typescript class, got: {}", html);
+    
+    // 检查是否有语法高亮（不是纯文本）
+    assert!(
+        html.contains("source ts"),
+        "Should have TypeScript syntax highlighting classes, got: {}", html
+    );
+}
