@@ -47,7 +47,54 @@ main();
 
 **Note for Next.js:** Ensure `asyncWebAssembly` is enabled in your `next.config.mjs`.
 
-### 2. Cloudflare Workers (Edge)
+### 2. Adding Styles for Code Blocks
+
+The renderer generates syntax-highlighted code blocks with CSS classes, but you need to include the styles to see the colors. We provide a ready-to-use CSS file with CSS variables for easy customization.
+
+#### Option A: Import the CSS file (Recommended)
+
+```typescript
+// In your app entry file or layout
+import '@y1feng200156/awsm-markdown-renderer/code-highlight.css';
+```
+
+#### Option B: Copy CSS variables to your own stylesheet
+
+If you prefer to customize the theme, copy the CSS variables from `code-highlight.css` and adjust the colors to match your design.
+
+#### Available CSS Variables
+
+```css
+:root {
+  /* Code block container (light theme default) */
+  --awsm-code-bg: #f6f8fa;
+  --awsm-code-fg: #24292e;
+  --awsm-code-border: #e1e4e8;
+  --awsm-code-border-radius: 8px;
+  --awsm-code-padding: 1rem;
+
+  /* Syntax colors */
+  --awsm-syntax-text: #24292e;
+  --awsm-syntax-comment: #6a737d;
+  --awsm-syntax-keyword: #d73a49;
+  --awsm-syntax-string: #032f62;
+  --awsm-syntax-number: #005cc5;
+  --awsm-syntax-function: #6f42c1;
+  --awsm-syntax-variable: #e36209;
+  --awsm-syntax-type: #005cc5;
+  /* ... and more */
+}
+```
+
+#### Dark Theme Support
+
+Add `data-theme="dark"` to your HTML or a parent element to enable the dark theme:
+
+```html
+<html data-theme="dark">
+```
+
+### 3. Cloudflare Workers (Edge)
 
 Cloudflare Workers require you to explicitly import the `.wasm` file and pass it to the renderer.
 
