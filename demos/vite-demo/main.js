@@ -1,5 +1,5 @@
 import "./style.css";
-import init, { render_markdown } from "../pkg/awsm_markdown_renderer.js";
+import init, { render_markdown } from "../../pkg/awsm_markdown_renderer.js";
 
 document.querySelector("#app").innerHTML = `
   <div class="card">

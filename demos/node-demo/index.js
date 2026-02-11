@@ -1,12 +1,12 @@
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import init, { render_markdown } from "../pkg/awsm_markdown_renderer.js";
+import init, { render_markdown } from "../../pkg/awsm_markdown_renderer.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const wasmPath = path.resolve(
   __dirname,
-  "../pkg/awsm_markdown_renderer_bg.wasm",
+  "../../pkg/awsm_markdown_renderer_bg.wasm",
 );
 
 console.log("Loading WASM from:", wasmPath);
