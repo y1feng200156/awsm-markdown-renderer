@@ -271,3 +271,95 @@ function def() {
         "Should have TypeScript syntax highlighting classes, got: {}", html
     );
 }
+
+#[test]
+fn test_jsx_code_block() {
+    let input = r#"```jsx
+function App() {
+  return <div>Hello</div>;
+}
+```"#;
+    let html = render_markdown(input);
+    println!("\n=== JSX Input ===");
+    println!("{}", input);
+    println!("\n=== JSX Output ===");
+    println!("{}", html);
+    
+    // 检查是否有 language-jsx 类
+    assert!(html.contains("language-jsx"), "Should have language-jsx class");
+    
+    // 检查是否有语法高亮（不是纯文本）
+    let has_highlighting = html.contains("source") && !html.contains("text plain");
+    println!("Has syntax highlighting: {}", has_highlighting);
+}
+
+#[test]
+fn test_js_code_block() {
+    let input = r#"```js
+function hello() {
+  return "world";
+}
+```"#;
+    let html = render_markdown(input);
+    println!("\n=== JS Input ===");
+    println!("{}", input);
+    println!("\n=== JS Output ===");
+    println!("{}", html);
+    
+    // 检查是否有 language-js 类
+    assert!(html.contains("language-js"), "Should have language-js class");
+}
+
+#[test]
+fn test_tsx_with_jsx() {
+    let input = r#"```tsx
+function App() {
+  return <div className="app">Hello</div>;
+}
+```"#;
+    let html = render_markdown(input);
+    println!("\n=== TSX with JSX Input ===");
+    println!("{}", input);
+    println!("\n=== TSX with JSX Output ===");
+    println!("{}", html);
+    
+    // 检查是否有语法高亮
+    assert!(html.contains("source tsx"), "Should have tsx source class");
+    
+    // 检查 JSX 标签是否被正确处理（不应该被转义为 &lt;）
+    // 注意：HTML 中 < 会被转义为 &lt;，但语法高亮应该能识别 JSX 标签
+}
+
+#[test]
+fn test_tsx_with_types() {
+    let input = r#"```tsx
+interface Props {
+  name: string;
+  age: number;
+}
+
+function greet(props: Props): string {
+  return `Hello ${props.name}`;
+}
+
+const App: React.FC<Props> = (props) => {
+  return <div>{greet(props)}</div>;
+};
+```"#;
+    let html = render_markdown(input);
+    println!("\n=== TSX with Types Input ===");
+    println!("{}", input);
+    println!("\n=== TSX with Types Output ===");
+    println!("{}", html);
+    
+    // 检查是否有 TSX 语法高亮
+    assert!(html.contains("source tsx"), "Should have tsx source class");
+    
+    // 检查类型声明关键字
+    assert!(html.contains("interface"), "Should contain 'interface' keyword");
+    assert!(html.contains("string"), "Should contain 'string' type");
+    assert!(html.contains("number"), "Should contain 'number' type");
+    
+    // 检查泛型语法 <Props>
+    assert!(html.contains("Props"), "Should contain 'Props' type name");
+}
