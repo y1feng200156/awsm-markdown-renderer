@@ -1,6 +1,6 @@
 [package]
 name = "awsm-markdown-renderer"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 
 # [重要] 告诉编译器这是一个动态库，这样才能生成 .wasm 文件
