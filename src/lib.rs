@@ -81,8 +81,13 @@ pub fn render_markdown(markdown_input: &str) -> String {
                         new_events.push(Event::Html(CowStr::from(math_html)));
                     } else {
                         let ss = &SYNTAX_SET;
+                        // 语言标识符映射：将一些常见的别名映射到正确的语法
+                        let lang_normalized = match lang {
+                            "jsx" => "tsx",  // JSX 使用 TSX 语法高亮
+                            _ => lang,
+                        };
                         let syntax = ss
-                            .find_syntax_by_token(lang)
+                            .find_syntax_by_token(lang_normalized)
                             .unwrap_or_else(|| ss.find_syntax_plain_text());
 
                         let mut html_generator = ClassedHTMLGenerator::new_with_class_style(
