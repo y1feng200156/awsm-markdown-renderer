@@ -1,6 +1,7 @@
 use latex2mathml::{DisplayStyle, latex_to_mathml};
 use once_cell::sync::Lazy;
 use pulldown_cmark::{CodeBlockKind, CowStr, Event, Options, Parser, Tag, TagEnd, html};
+use regex::Regex;
 
 use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
@@ -8,11 +9,15 @@ use syntect::util::LinesWithEndings;
 use wasm_bindgen::prelude::*;
 
 // --- 1. 静态资源预加载 ---
-// 这是一个昂贵的操作，我们只做一次。
-// Lazy 确保它在 Wasm 模块加载时初始化，而不是每次 render 时。
 static SYNTAX_SET: Lazy<SyntaxSet> = Lazy::new(|| {
     let syntax_dump = include_bytes!("../assets/syntax.packdump");
     syntect::dumps::from_binary(syntax_dump)
+});
+
+// 预编译正则：解决 $5 and $10 问题
+// 逻辑：内联公式 $...$ 的第一个字符不能是数字(\d)也不能是空格(\s)
+static MATH_REGEX: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r"(\$\$)([\s\S]+?)(\$\$)|(\$)((?:[^$\s\d]|[^$\s\d][^$]*?[^$\s]))(\$)").unwrap()
 });
 
 // --- 2. 辅助函数：数学渲染 ---
@@ -102,6 +107,7 @@ pub fn render_markdown(markdown_input: &str) -> String {
         }
 
         // --- State 2: Inside Display Math Block ($$) ---
+        // 处理多行公式块
         if in_display_math {
             match event {
                 Event::Text(text) => {
@@ -138,89 +144,53 @@ pub fn render_markdown(markdown_input: &str) -> String {
                 };
             }
 
+            // --- 核心修改: 使用正则处理 Text 中的数学公式 ---
             Event::Text(text) => {
-                // 扫描 Text 寻找 $$ 或 $
-                let mut last_idx = 0;
-                let chars: Vec<char> = text.chars().collect();
-                let mut i = 0;
-
-                while i < chars.len() {
-                    // Check $$
-                    if chars[i] == '$' && i + 1 < chars.len() && chars[i + 1] == '$' {
-                        // 发现 $$
-                        // 1. Flush 之前的 text
-                        if i > last_idx {
-                            let t: String = chars[last_idx..i].iter().collect();
-                            new_events.push(Event::Text(CowStr::from(t)));
-                        }
-
-                        // 2. 寻找闭合 $$ within THIS text node
-                        let mut closed_in_line = None;
-                        for j in (i + 2)..chars.len() {
-                            if chars[j] == '$' && j + 1 < chars.len() && chars[j + 1] == '$' {
-                                closed_in_line = Some(j);
-                                break;
-                            }
-                        }
-
-                        if let Some(end) = closed_in_line {
-                            // 完整块 $$...$$
-                            let math_content: String = chars[(i + 2)..end].iter().collect();
-                            let math_html = render_math(&math_content, true);
-                            new_events.push(Event::Html(CowStr::from(math_html)));
-
-                            last_idx = end + 2;
-                            i = last_idx;
-                        } else {
-                            // 跨行块 $$... (Opening)
-                            in_display_math = true;
-                            if i + 2 < chars.len() {
-                                let remainder: String = chars[(i + 2)..].iter().collect();
-                                math_buffer.push_str(&remainder);
-                            }
-                            last_idx = chars.len();
-                            break;
-                        }
-                    }
-                    // Check $ (Inline)
-                    else if chars[i] == '$' {
-                        if i + 1 < chars.len() && !chars[i + 1].is_whitespace() {
-                            let mut end = None;
-                            for j in (i + 1)..chars.len() {
-                                if chars[j] == '$' {
-                                    if j + 1 < chars.len() && chars[j + 1] == '$' {
-                                        continue;
-                                    }
-                                    if chars[j - 1].is_whitespace() {
-                                        continue;
-                                    }
-                                    end = Some(j);
-                                    break;
-                                }
-                            }
-
-                            if let Some(close_idx) = end {
-                                if i > last_idx {
-                                    let t: String = chars[last_idx..i].iter().collect();
-                                    new_events.push(Event::Text(CowStr::from(t)));
-                                }
-                                let math_content: String =
-                                    chars[(i + 1)..close_idx].iter().collect();
-                                let math_html = render_math(&math_content, false);
-                                new_events.push(Event::Html(CowStr::from(math_html)));
-
-                                last_idx = close_idx + 1;
-                                i = last_idx;
-                                continue;
-                            }
-                        }
-                    }
-                    i += 1;
+                // 1. [修复] 检查是否是多行公式块的开始 ($$)
+                // 如果当前文本行纯粹是 "$$"，则切换到 display_math 模式。
+                // 这解决了 test_math_block 失败的问题。
+                if text.trim() == "$$" {
+                    in_display_math = true;
+                    continue;
                 }
 
-                if last_idx < chars.len() {
-                    let t: String = chars[last_idx..].iter().collect();
-                    new_events.push(Event::Text(CowStr::from(t)));
+                // 如果没有 $ 符号，直接跳过正则，提升性能
+                if !text.contains('$') {
+                    new_events.push(Event::Text(text));
+                    continue;
+                }
+
+                let mut last_end = 0;
+
+                // 遍历所有正则匹配项 (处理行内公式和单行块级公式)
+                for cap in MATH_REGEX.captures_iter(&text) {
+                    let match_start = cap.get(0).unwrap().start();
+                    let match_end = cap.get(0).unwrap().end();
+
+                    // 1. 将匹配项之前的普通文本 push 进去
+                    if match_start > last_end {
+                        new_events.push(Event::Text(CowStr::from(
+                            text[last_end..match_start].to_string(),
+                        )));
+                    }
+
+                    // 2. 判断是 $$ 还是 $
+                    if let Some(content) = cap.get(2) {
+                        // 匹配到了 $$ (Group 2 是内容)
+                        let math_html = render_math(content.as_str(), true);
+                        new_events.push(Event::Html(CowStr::from(math_html)));
+                    } else if let Some(content) = cap.get(5) {
+                        // 匹配到了 $ (Group 5 是内容)
+                        let math_html = render_math(content.as_str(), false);
+                        new_events.push(Event::Html(CowStr::from(math_html)));
+                    }
+
+                    last_end = match_end;
+                }
+
+                // 3. 将剩余的普通文本 push 进去
+                if last_end < text.len() {
+                    new_events.push(Event::Text(CowStr::from(text[last_end..].to_string())));
                 }
             }
 

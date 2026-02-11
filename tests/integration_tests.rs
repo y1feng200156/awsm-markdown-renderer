@@ -131,3 +131,96 @@ And here is the formula: $x + y = z$.
     // Formula should be rendered
     assert!(html.contains("<math"), "Formula should render");
 }
+
+#[test]
+fn test_multiple_inline_math_in_one_line() {
+    let input = "If $a=1$ and $b=2$, then $c=3$.";
+    let html = render_markdown(input);
+
+    // 应该包含 3 个 math 标签
+    let matches: Vec<_> = html.match_indices("<math").collect();
+    assert_eq!(matches.len(), 3, "Should render all 3 inline formulas");
+
+    // 确保中间的文本没有丢失
+    assert!(
+        html.contains(" and "),
+        "Text between formulas should be preserved"
+    );
+    assert!(
+        html.contains(", then "),
+        "Text between formulas should be preserved"
+    );
+}
+
+#[test]
+fn test_math_inside_formatting() {
+    let input = "This is **$E=mc^2$** and [$x$](http://example.com).";
+    let html = render_markdown(input);
+
+    // 验证粗体
+    assert!(html.contains("<strong>"), "Should render bold");
+    // 验证链接
+    assert!(
+        html.contains("<a href=\"http://example.com\">"),
+        "Should render link"
+    );
+    // 验证数学公式依然存在
+    assert!(
+        html.contains("<math"),
+        "Math inside formatting should render"
+    );
+}
+
+#[test]
+fn test_invalid_latex_handling() {
+    // 缺少右括号，latex2mathml 应该会报错
+    let input = "This matches wrong: $\\frac{1$";
+    let html = render_markdown(input);
+
+    assert!(
+        html.contains("math-error"),
+        "Should render error span for invalid latex"
+    );
+    assert!(html.contains("color:red"), "Error should be styled (red)");
+    // 绝对不能包含 <math>，因为解析失败了
+    assert!(
+        !html.contains("<math"),
+        "Invalid latex should not produce math tags"
+    );
+}
+
+#[test]
+fn test_unicode_and_chinese() {
+    let input = "公式$x+y$的计算结果。";
+    let html = render_markdown(input);
+
+    assert!(html.contains("公式"), "Should preserve Chinese text before");
+    assert!(
+        html.contains("<math"),
+        "Should render math adjacent to Chinese"
+    );
+    assert!(
+        html.contains("的计算结果"),
+        "Should preserve Chinese text after"
+    );
+}
+
+#[test]
+fn test_number_start_restriction() {
+    // 你的正则逻辑：如果 $ 紧跟数字，则不视为公式
+    let input = "Equation $1+1=2$ should be text, but $x=1$ is math.";
+    let html = render_markdown(input);
+
+    // $1+1=2$ 应该保持原样（不渲染为 MathML）
+    assert!(
+        !html.contains("<math><mn>1</mn>"),
+        "Formulas starting with a number should be ignored (to protect currency)"
+    );
+    assert!(html.contains("$1+1=2$"), "Should render as plain text");
+
+    // $x=1$ 应该渲染
+    assert!(
+        html.contains("<mi>x</mi>"),
+        "Standard formulas should still render"
+    );
+}
