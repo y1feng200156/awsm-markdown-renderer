@@ -1,6 +1,6 @@
 [package]
 name = "awsm-markdown-renderer"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2024"
 repository = "https://github.com/y1feng200156/awsm-markdown-renderer"
 
@@ -9,7 +9,7 @@ repository = "https://github.com/y1feng200156/awsm-markdown-renderer"
 crate-type = ["cdylib", "rlib"] 
 
 [features]
-generate-dump = ["syntect/default-syntaxes"]
+generate-dump = ["syntect/default-syntaxes", "syntect/yaml-load"]
 
 [dependencies]
 wasm-bindgen = "0.2"
